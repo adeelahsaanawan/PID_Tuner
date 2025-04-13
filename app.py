@@ -50,8 +50,8 @@ def analyze():
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
 
-        # Compute performance metrics.
-        info = step_info(T)
+        # Compute performance metrics using step_info which returns a dictionary.
+        info = step_info(T)   # This returns a dictionary with keys: "RiseTime", "SettlingTime", "Overshoot", etc.
         ss_val = dcgain(T)
         steady_state_error = abs(1 - ss_val)
 
@@ -60,16 +60,15 @@ def analyze():
             "phase_margin_deg": pm,
             "wcg": wcg,
             "wcp": wcp,
-            "rise_time": info.RiseTime,
-            "settling_time": info.SettlingTime,
-            "overshoot": info.Overshoot,
+            "rise_time": info["RiseTime"],
+            "settling_time": info["SettlingTime"],
+            "overshoot": info["Overshoot"],
             "steady_state_error": steady_state_error,
             "step_response": {
                 "time": t_out.tolist(),
                 "response": y_out.tolist()
             }
         }
-
         # Generate a Bode plot image as PNG (encoded in base64)
         fig, ax = plt.subplots(2, 1, figsize=(6,8))
         mag, phase, omega = L.bode(dB=True, Plot=False)
