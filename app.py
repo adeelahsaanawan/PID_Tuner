@@ -3,7 +3,8 @@ import numpy as np
 import io, base64
 import matplotlib.pyplot as plt
 import traceback
-from control import tf, margin, step_response, feedback, dcgain, stepinfo
+from control import tf, margin, step_response, feedback, dcgain
+from control.timeresp import step_info
 
 app = Flask(__name__)
 
@@ -50,7 +51,7 @@ def analyze():
         t_out, y_out = step_response(T, T=t)
 
         # Compute performance metrics.
-        info = stepinfo(T)
+        info = step_info(T)
         ss_val = dcgain(T)
         steady_state_error = abs(1 - ss_val)
 
