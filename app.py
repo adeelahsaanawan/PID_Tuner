@@ -71,7 +71,7 @@ def analyze():
         }
         # Generate a Bode plot image as PNG (encoded in base64)
         fig, ax = plt.subplots(2, 1, figsize=(6,8))
-        mag, phase, omega = L.bode(dB=True, Plot=False)
+        mag, phase, omega = control.bode(L, dB=True, Plot=False)
         ax[0].semilogx(omega, 20 * np.log10(mag))
         ax[0].set_title("Magnitude (dB)")
         ax[1].semilogx(omega, phase * 180/np.pi)
