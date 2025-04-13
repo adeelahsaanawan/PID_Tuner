@@ -10,7 +10,7 @@ from control.timeresp import step_info
 app = Flask(__name__)
 
 def sanitize(val):
-    """Converts non-finite numbers to None."""
+    """Convert non-finite numbers (NaN/Infinity) to None."""
     try:
         if np.isscalar(val) and not np.isfinite(val):
             return None
@@ -38,10 +38,10 @@ def analyze():
         G = tf(plant_num, plant_den)
 
         # Build the filtered PID controller:
-        # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N*s)
-        # Combined into a single rational function:
-        #   Numerator: [N*(Kp+Kd), (Kp + Ki*N), Ki]
-        #   Denom: [N, 1, 0]
+        # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N * s)
+        # Combined as a single rational function:
+        # Numerator: [N*(Kp+Kd), (Kp+Ki*N), Ki]
+        # Denom: [N, 1, 0]
         C_num = [N * (kp + kd), (kp + ki * N), ki]
         C_den = [N, 1, 0]
         C = tf(C_num, C_den)
@@ -56,7 +56,7 @@ def analyze():
         gm, pm, wcg, wcp = margin(L)
         gain_margin_dB = 20 * np.log10(gm) if gm > 0 else None
 
-        # Sanitize numeric values to ensure valid JSON (remove Infinity/NaN)
+        # Sanitize outputs to remove NaN/Infinity
         gain_margin_dB = sanitize(gain_margin_dB)
         pm = sanitize(pm)
         wcg = sanitize(wcg)
@@ -66,7 +66,7 @@ def analyze():
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
 
-        # Compute performance metrics using step_info (which returns a dictionary)
+        # Compute performance metrics using step_info (dictionary)
         info = step_info(T)
         ss_val = dcgain(T)
         steady_state_error = abs(1 - ss_val)
@@ -86,11 +86,9 @@ def analyze():
             }
         }
 
-        # Instead of generating and saving an image of the Bode plot,
-        # we extract the Bode plot data to be plotted on the front end.
-        # Call the bode() function with plot=False to get the arrays.
+        # Generate interactive Bode data instead of an image.
+        # Use control.bode with plot=False to obtain arrays.
         mag, phase, omega = control.bode(L, dB=True, plot=False)
-        # Compute magnitude in dB and phase in degrees.
         bode_data = {
             "omega": omega.tolist(),
             "magnitude_db": (20 * np.log10(mag)).tolist(),

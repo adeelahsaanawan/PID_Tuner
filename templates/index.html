@@ -51,11 +51,14 @@
       color: #03dac6;
       margin-bottom: 0.5rem;
     }
-    .plot-img {
-      max-width: 100%;
-      height: auto;
-      display: block;
-      margin: auto;
+    .spinner-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+    }
+    .alert-custom {
+      margin-top: 15px;
     }
   </style>
 </head>
@@ -107,31 +110,53 @@
         <h4 class="mb-0">System Analysis</h4>
       </div>
       <div class="card-body">
+        <!-- Error Alert -->
+        <div id="error-message" class="alert alert-danger alert-custom d-none"></div>
+        
         <!-- Bode Plot Section -->
         <h5>Bode Plot (Open-Loop)</h5>
-        <div class="text-center mb-4">
-          <img id="bode-image" class="plot-img" alt="Bode Plot will appear here.">
+        <div id="bode-plot-section" class="text-center mb-4">
+          <div id="bode-loading" class="spinner-container">
+            <div class="spinner-border text-primary" role="status">
+              <span class="sr-only">Loading Bode Plot...</span>
+            </div>
+          </div>
+          <!-- Div for interactive Bode plot -->
+          <div id="bode-plot" class="d-none"></div>
         </div>
         <!-- Step Response Section -->
         <h5>Step Response (Closed-Loop)</h5>
-        <div id="step-response" class="mb-4"></div>
+        <div id="step-response-section" class="mb-4">
+          <div id="step-loading" class="spinner-container">
+            <div class="spinner-border text-primary" role="status">
+              <span class="sr-only">Loading Step Response...</span>
+            </div>
+          </div>
+          <div id="step-response" class="d-none"></div>
+        </div>
         <!-- Performance Metrics Section -->
         <h5>Performance Metrics</h5>
-        <div class="row" id="metrics">
+        <div id="metrics" class="row">
           <!-- Metrics will be populated here -->
         </div>
       </div>
     </div>
   </div>
   
-  <!-- Include jQuery and Bootstrap JS -->
+  <!-- Include jQuery, Bootstrap JS, and Plotly JS -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Include Plotly JS -->
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script>
     async function analyze() {
-      // Gather input values
+      // Clear previous outputs and errors, show loading spinners
+      document.getElementById("error-message").classList.add("d-none");
+      document.getElementById("bode-plot").classList.add("d-none");
+      document.getElementById("step-response").classList.add("d-none");
+      document.getElementById("bode-loading").classList.remove("d-none");
+      document.getElementById("step-loading").classList.remove("d-none");
+      document.getElementById("metrics").innerHTML = "";
+      
       const payload = {
         plant_num: document.getElementById("plant-num").value,
         plant_den: document.getElementById("plant-den").value,
@@ -142,21 +167,51 @@
       };
       
       try {
-        // Send the POST request to the Flask backend
+        // Send POST request to the Flask backend
         const response = await fetch("/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        
         const result = await response.json();
         if(result.error) {
-          alert("Error: " + result.error);
-          return;
+          throw new Error(result.error);
         }
         
-        // Update the Bode plot image
-        document.getElementById("bode-image").src = "data:image/png;base64," + result.bode_plot;
+        // Plot the interactive Bode plot using Plotly, using bode_data from backend.
+        const bodeData = result.bode_data;
+        if (!bodeData) {
+          throw new Error("Backend did not return bode_data.");
+        }
+        const magnitudeTrace = {
+          x: bodeData.omega,
+          y: bodeData.magnitude_db,
+          mode: "lines",
+          name: "Magnitude (dB)",
+          yaxis: "y1"
+        };
+        const phaseTrace = {
+          x: bodeData.omega,
+          y: bodeData.phase_deg,
+          mode: "lines",
+          name: "Phase (deg)",
+          yaxis: "y2"
+        };
+        const bodeLayout = {
+          title: "Bode Plot (Open-Loop)",
+          xaxis: { title: "Frequency (rad/s)", type: "log" },
+          yaxis: { title: "Magnitude (dB)", domain: [0, 0.45] },
+          yaxis2: { title: "Phase (deg)", domain: [0.55, 1], anchor: "x" },
+          paper_bgcolor: "#1e1e1e",
+          plot_bgcolor: "#1e1e1e",
+          font: { color: "white" },
+          margin: { l: 60, r: 60, t: 50, b: 50 }
+        };
+        Plotly.newPlot("bode-plot", [magnitudeTrace, phaseTrace], bodeLayout)
+          .then(() => {
+            document.getElementById("bode-loading").classList.add("d-none");
+            document.getElementById("bode-plot").classList.remove("d-none");
+          });
         
         // Plot the Step Response using Plotly
         const stepTrace = {
@@ -173,9 +228,13 @@
           plot_bgcolor: "#1e1e1e",
           font: { color: "white" }
         };
-        Plotly.newPlot("step-response", [stepTrace], stepLayout);
+        Plotly.newPlot("step-response", [stepTrace], stepLayout)
+          .then(() => {
+            document.getElementById("step-loading").classList.add("d-none");
+            document.getElementById("step-response").classList.remove("d-none");
+          });
         
-        // Display Performance Metrics in styled boxes
+        // Display performance metrics in styled boxes
         const metricsData = [
           { label: "Gain Margin (dB)", value: result.gain_margin_dB ? result.gain_margin_dB.toFixed(2) : "N/A" },
           { label: "Phase Margin (°)", value: result.phase_margin_deg ? result.phase_margin_deg.toFixed(2) : "N/A" },
@@ -197,9 +256,12 @@
           `;
         });
         document.getElementById("metrics").innerHTML = metricsHtml;
-        
       } catch (err) {
-        alert("Error communicating with the backend: " + err);
+        // Hide any loading indicators and display error message
+        document.getElementById("bode-loading").classList.add("d-none");
+        document.getElementById("step-loading").classList.add("d-none");
+        document.getElementById("error-message").classList.remove("d-none");
+        document.getElementById("error-message").innerHTML = "Error: " + err.message;
       }
     }
   </script>
