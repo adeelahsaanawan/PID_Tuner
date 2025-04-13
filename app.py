@@ -16,7 +16,7 @@ def index():
 @app.route("/analyze", methods=["POST"])
 def analyze():
     try:
-        # Get data from the request JSON
+        # Get data from request JSON
         data = request.get_json()
         plant_num = [float(x) for x in data.get("plant_num", "").split(",")]
         plant_den = [float(x) for x in data.get("plant_den", "").split(",")]
@@ -29,7 +29,7 @@ def analyze():
         G = tf(plant_num, plant_den)
 
         # Build the filtered PID controller:
-        # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N * s)
+        # C(s) = Kp + Ki/s + (Kd * N * s)/(1 + N * s)
         # Combined to a single rational function:
         #   Numerator: [N*(Kp+Kd), (Kp + Ki*N), Ki]
         #   Denom: [N, 1, 0]
@@ -46,8 +46,11 @@ def analyze():
         # Compute gain and phase margins.
         gm, pm, wcg, wcp = margin(L)
         gain_margin_dB = 20 * np.log10(gm) if gm > 0 else None
+        # Sanitize gain_margin_dB so that if it's infinite, set to None.
+        if gain_margin_dB is not None and not np.isfinite(gain_margin_dB):
+            gain_margin_dB = None
 
-        # Simulate step response (0 to 10 sec)
+        # Simulate step response (0 to 10 seconds)
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
 
@@ -73,7 +76,7 @@ def analyze():
 
         # Generate a Bode plot image as PNG (encoded in base64)
         fig, ax = plt.subplots(2, 1, figsize=(6,8))
-        # Call the standalone bode() function with the correct parameter name: plot=False
+        # Use the standalone bode() function with the correct parameter: plot=False
         mag, phase, omega = control.bode(L, dB=True, plot=False)
         ax[0].semilogx(omega, 20 * np.log10(mag))
         ax[0].set_title("Magnitude (dB)")
