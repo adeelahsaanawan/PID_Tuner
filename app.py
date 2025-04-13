@@ -9,6 +9,15 @@ from control.timeresp import step_info
 
 app = Flask(__name__)
 
+def sanitize(val):
+    """Converts non-finite numbers to None."""
+    try:
+        if np.isscalar(val) and not np.isfinite(val):
+            return None
+        return val
+    except Exception:
+        return val
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -29,7 +38,7 @@ def analyze():
         G = tf(plant_num, plant_den)
 
         # Build the filtered PID controller:
-        # C(s) = Kp + Ki/s + (Kd * N * s)/(1 + N * s)
+        # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N * s)
         # Combined to a single rational function:
         #   Numerator: [N*(Kp+Kd), (Kp + Ki*N), Ki]
         #   Denom: [N, 1, 0]
@@ -46,11 +55,14 @@ def analyze():
         # Compute gain and phase margins.
         gm, pm, wcg, wcp = margin(L)
         gain_margin_dB = 20 * np.log10(gm) if gm > 0 else None
-        # Sanitize gain_margin_dB so that if it's infinite, set to None.
-        if gain_margin_dB is not None and not np.isfinite(gain_margin_dB):
-            gain_margin_dB = None
 
-        # Simulate step response (0 to 10 seconds)
+        # Sanitize computed values
+        gain_margin_dB = sanitize(gain_margin_dB)
+        pm = sanitize(pm)
+        wcg = sanitize(wcg)
+        wcp = sanitize(wcp)
+
+        # Simulate step response (0 to 10 sec)
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
 
@@ -61,13 +73,13 @@ def analyze():
 
         result = {
             "gain_margin_dB": gain_margin_dB,
-            "phase_margin_deg": pm,
-            "wcg": wcg,
-            "wcp": wcp,
-            "rise_time": info["RiseTime"],
-            "settling_time": info["SettlingTime"],
-            "overshoot": info["Overshoot"],
-            "steady_state_error": steady_state_error,
+            "phase_margin_deg": sanitize(pm),
+            "wcg": sanitize(wcg),
+            "wcp": sanitize(wcp),
+            "rise_time": sanitize(info["RiseTime"]),
+            "settling_time": sanitize(info["SettlingTime"]),
+            "overshoot": sanitize(info["Overshoot"]),
+            "steady_state_error": sanitize(steady_state_error),
             "step_response": {
                 "time": t_out.tolist(),
                 "response": y_out.tolist()
@@ -76,7 +88,7 @@ def analyze():
 
         # Generate a Bode plot image as PNG (encoded in base64)
         fig, ax = plt.subplots(2, 1, figsize=(6,8))
-        # Use the standalone bode() function with the correct parameter: plot=False
+        # Use the standalone bode() function with plot=False (correct parameter is lowercase)
         mag, phase, omega = control.bode(L, dB=True, plot=False)
         ax[0].semilogx(omega, 20 * np.log10(mag))
         ax[0].set_title("Magnitude (dB)")
