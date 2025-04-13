@@ -3,8 +3,10 @@ import numpy as np
 import io, base64
 import matplotlib.pyplot as plt
 import traceback
+import control
 from control import tf, margin, step_response, feedback, dcgain
 from control.timeresp import step_info
+
 
 app = Flask(__name__)
 
