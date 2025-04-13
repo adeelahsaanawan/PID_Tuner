@@ -7,7 +7,6 @@ import control
 from control import tf, margin, step_response, feedback, dcgain
 from control.timeresp import step_info
 
-
 app = Flask(__name__)
 
 @app.route("/")
@@ -17,7 +16,7 @@ def index():
 @app.route("/analyze", methods=["POST"])
 def analyze():
     try:
-        # Get data from request JSON
+        # Get data from the request JSON
         data = request.get_json()
         plant_num = [float(x) for x in data.get("plant_num", "").split(",")]
         plant_den = [float(x) for x in data.get("plant_den", "").split(",")]
@@ -32,16 +31,16 @@ def analyze():
         # Build the filtered PID controller:
         # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N * s)
         # Combined to a single rational function:
-        # Numerator: [N*(Kp+Kd), (Kp + Ki*N), Ki]
-        # Denom: [N, 1, 0]
+        #   Numerator: [N*(Kp+Kd), (Kp + Ki*N), Ki]
+        #   Denom: [N, 1, 0]
         C_num = [N * (kp + kd), (kp + ki * N), ki]
         C_den = [N, 1, 0]
         C = tf(C_num, C_den)
 
-        # Open-loop L(s) = G(s)*C(s)
+        # Open-loop transfer function L(s) = G(s)*C(s)
         L = G * C
 
-        # Closed-loop T(s) = L(s) / [1 + L(s)]
+        # Closed-loop transfer function T(s) = L(s) / [1 + L(s)]
         T = feedback(L, 1)
 
         # Compute gain and phase margins.
@@ -52,8 +51,8 @@ def analyze():
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
 
-        # Compute performance metrics using step_info which returns a dictionary.
-        info = step_info(T)   # This returns a dictionary with keys: "RiseTime", "SettlingTime", "Overshoot", etc.
+        # Compute performance metrics using step_info (returns a dictionary)
+        info = step_info(T)
         ss_val = dcgain(T)
         steady_state_error = abs(1 - ss_val)
 
@@ -71,9 +70,11 @@ def analyze():
                 "response": y_out.tolist()
             }
         }
+
         # Generate a Bode plot image as PNG (encoded in base64)
         fig, ax = plt.subplots(2, 1, figsize=(6,8))
-        mag, phase, omega = control.bode(L, dB=True, Plot=False)
+        # Call the standalone bode() function with the correct parameter name: plot=False
+        mag, phase, omega = control.bode(L, dB=True, plot=False)
         ax[0].semilogx(omega, 20 * np.log10(mag))
         ax[0].set_title("Magnitude (dB)")
         ax[1].semilogx(omega, phase * 180/np.pi)
