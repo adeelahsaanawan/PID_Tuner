@@ -8,14 +8,9 @@ from control.timeresp import step_info
 
 app = Flask(__name__)
 
-# @app.route("/")
-# def index():
-#     return render_template("index.html")
-
 @app.route("/")
 def index():
-    return "<h1>Hello, PID Tuner App!</h1>"
-
+    return render_template("index.html")
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
