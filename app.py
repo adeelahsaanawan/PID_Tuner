@@ -38,15 +38,15 @@ def analyze():
         G = tf(plant_num, plant_den)
 
         # Build the filtered PID controller:
-        # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N * s)
-        # Combined to a single rational function:
+        # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N*s)
+        # Combined into a single rational function:
         #   Numerator: [N*(Kp+Kd), (Kp + Ki*N), Ki]
         #   Denom: [N, 1, 0]
         C_num = [N * (kp + kd), (kp + ki * N), ki]
         C_den = [N, 1, 0]
         C = tf(C_num, C_den)
 
-        # Open-loop transfer function L(s) = G(s)*C(s)
+        # Open-loop transfer function L(s) = G(s) * C(s)
         L = G * C
 
         # Closed-loop transfer function T(s) = L(s) / [1 + L(s)]
@@ -56,7 +56,7 @@ def analyze():
         gm, pm, wcg, wcp = margin(L)
         gain_margin_dB = 20 * np.log10(gm) if gm > 0 else None
 
-        # Sanitize computed values
+        # Sanitize numeric values to ensure valid JSON (remove Infinity/NaN)
         gain_margin_dB = sanitize(gain_margin_dB)
         pm = sanitize(pm)
         wcg = sanitize(wcg)
@@ -66,7 +66,7 @@ def analyze():
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
 
-        # Compute performance metrics using step_info (returns a dictionary)
+        # Compute performance metrics using step_info (which returns a dictionary)
         info = step_info(T)
         ss_val = dcgain(T)
         steady_state_error = abs(1 - ss_val)
@@ -86,21 +86,17 @@ def analyze():
             }
         }
 
-        # Generate a Bode plot image as PNG (encoded in base64)
-        fig, ax = plt.subplots(2, 1, figsize=(6,8))
-        # Use the standalone bode() function with plot=False (correct parameter is lowercase)
+        # Instead of generating and saving an image of the Bode plot,
+        # we extract the Bode plot data to be plotted on the front end.
+        # Call the bode() function with plot=False to get the arrays.
         mag, phase, omega = control.bode(L, dB=True, plot=False)
-        ax[0].semilogx(omega, 20 * np.log10(mag))
-        ax[0].set_title("Magnitude (dB)")
-        ax[1].semilogx(omega, phase * 180/np.pi)
-        ax[1].set_title("Phase (deg)")
-        plt.tight_layout()
-        buf = io.BytesIO()
-        plt.savefig(buf, format="png")
-        plt.close(fig)
-        buf.seek(0)
-        bode_image = base64.b64encode(buf.read()).decode("utf-8")
-        result["bode_plot"] = bode_image
+        # Compute magnitude in dB and phase in degrees.
+        bode_data = {
+            "omega": omega.tolist(),
+            "magnitude_db": (20 * np.log10(mag)).tolist(),
+            "phase_deg": (phase * 180/np.pi).tolist()
+        }
+        result["bode_data"] = bode_data
 
         return jsonify(result)
     except Exception as e:
