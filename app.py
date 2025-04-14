@@ -29,18 +29,8 @@ def analyze():
         kp = float(data.get("kp", 1))
         ki = float(data.get("ki", 0.5))
         kd = float(data.get("kd", 0.1))
-        # Use derivative filter time constant Tf instead of N; default to 0.01 if not provided
+        # Use derivative filter time constant Tf instead of N; defaulting to 0.01
         Tf = float(data.get("Tf", 0.01))
-        
-        warnings = []  # Collect warnings to send back to the frontend
-        
-        # Check for negative gains and add warnings if any
-        if kp < 0:
-            warnings.append("Proportional gain (Kp) is negative. Generally, gains should be positive for stability.")
-        if ki < 0:
-            warnings.append("Integral gain (Ki) is negative. Negative Ki may lead to nonphysical results.")
-        if kd < 0:
-            warnings.append("Derivative gain (Kd) is negative. Negative Kd may yield unexpected behavior.")
         
         # Build the plant G(s)
         G = tf(plant_num, plant_den)
@@ -60,13 +50,6 @@ def analyze():
         # Closed-loop transfer function T(s) = L(s) / (1 + L(s))
         T = feedback(L, 1)
 
-        # Stability check: Compute the poles of T(s)
-        poles = control.pole(T)
-        if np.all(np.real(poles) < 0):
-            stability = "Stable"
-        else:
-            stability = "Unstable"
-        
         # Compute gain and phase margins.
         gm, pm, wcg, wcp = margin(L)
         gain_margin_dB = 20 * np.log10(gm) if gm > 0 else None
@@ -82,12 +65,7 @@ def analyze():
         t_out, y_out = step_response(T, T=t)
 
         # Compute performance metrics using step_info (returns a dictionary)
-        try:
-            info = step_info(T)
-        except Exception as e:
-            warnings.append("Step response analysis failed: " + str(e))
-            info = {}
-            
+        info = step_info(T)
         ss_val = dcgain(T)
         steady_state_error = abs(1 - ss_val)
 
@@ -96,25 +74,23 @@ def analyze():
             "phase_margin_deg": sanitize(pm),
             "wcg": sanitize(wcg),
             "wcp": sanitize(wcp),
-            "rise_time": sanitize(info.get("RiseTime", None)),
-            "settling_time": sanitize(info.get("SettlingTime", None)),
-            "overshoot": sanitize(info.get("Overshoot", None)),
+            "rise_time": sanitize(info["RiseTime"]),
+            "settling_time": sanitize(info["SettlingTime"]),
+            "overshoot": sanitize(info["Overshoot"]),
             "steady_state_error": sanitize(steady_state_error),
-            "stability": stability,  # New stability information
             "step_response": {
                 "time": t_out.tolist(),
                 "response": y_out.tolist()
-            },
-            "warnings": warnings  # Warnings if any
+            }
         }
 
         # Generate Bode plot data manually over 10^-2 to 10^2:
         omega = np.logspace(-2, 2, 100)  # Frequency range from 10^-2 to 10^2 rad/s
         # Call control.bode() with dB=False to get linear magnitude
         mag_linear, phase, _ = control.bode(L, omega, dB=False, plot=False)
-        mag_db = (20 * np.log10(mag_linear)).tolist()  # Convert magnitude to dB
-        phase_deg = (phase * 180 / np.pi).tolist()       # Convert phase to degrees
-
+        mag_db = (20 * np.log10(mag_linear)).tolist()  # Convert linear magnitude to dB
+        phase_deg = (phase * 180 / np.pi).tolist()     # Convert phase from radians to degrees
+        
         bode_data = {
             "omega": omega.tolist(),
             "magnitude_db": mag_db,
