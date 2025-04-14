@@ -340,7 +340,7 @@ A higher \(K_i\) can slow the response."></i>
         };
         
         const bodeLayout = {
-          title: "Bode Plot (Open-Loop)",
+          title: "Bode Plot (Loop Shape)",
           autosize: true,
           xaxis: { title: "Frequency (rad/s)", type: "log" },
           yaxis: { title: "Magnitude (dB)", domain: [0, 0.45] },
@@ -384,15 +384,16 @@ A higher \(K_i\) can slow the response."></i>
             document.getElementById("step-response").classList.remove("d-none");
           });
         
-        // Display performance metrics.
-        const metricsData = [
-          { label: "Gain Margin (dB)", value: result.gain_margin_dB ? result.gain_margin_dB.toFixed(2) : "N/A" },
-          { label: "Phase Margin (°)", value: result.phase_margin_deg ? result.phase_margin_deg.toFixed(2) : "N/A" },
-          { label: "Rise Time (s)", value: result.rise_time ? result.rise_time.toFixed(3) : "N/A" },
-          { label: "Settling Time (s)", value: result.settling_time ? result.settling_time.toFixed(3) : "N/A" },
-          { label: "Overshoot (%)", value: result.overshoot ? result.overshoot.toFixed(2) + "%" : "N/A" },
-          { label: "Steady-State Error", value: result.steady_state_error ? result.steady_state_error.toExponential(2) : "N/A" }
-        ];
+          // Display performance metrics.
+          const metricsData = [
+            { label: "Gain Margin (dB)", value: result.gain_margin_dB !== null ? result.gain_margin_dB.toFixed(2) : "N/A" },
+            { label: "Phase Margin (°)", value: result.phase_margin_deg !== null ? result.phase_margin_deg.toFixed(2) : "N/A" },
+            { label: "Rise Time (s)", value: result.rise_time !== null ? result.rise_time.toFixed(3) : "N/A" },
+            { label: "Settling Time (s)", value: result.settling_time !== null ? result.settling_time.toFixed(3) : "N/A" },
+            { label: "Overshoot (%)", value: result.overshoot !== null ? result.overshoot.toFixed(2) + "%" : "N/A" },
+            { label: "Steady-State Error", value: result.steady_state_error !== null ? result.steady_state_error.toExponential(2) : "N/A" }
+          ];
+
         
         let metricsHtml = "";
         metricsData.forEach(metric => {
