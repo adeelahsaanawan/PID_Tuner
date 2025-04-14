@@ -6,8 +6,15 @@
   <title>Online PID Tuner</title>
   <!-- Bootstrap 4 CSS for high-end styling -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Google Font (Roboto) -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- MathJax for LaTeX rendering -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
   <style>
     body {
       background-color: #121212;
@@ -21,31 +28,37 @@
       background-color: #1e1e1e;
       border: none;
       margin-bottom: 20px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      box-shadow: 0 0 15px rgba(3, 218, 198, 0.7);
     }
     .card-header {
       background-color: #2d2d2d;
-      border-bottom: 1px solid #444;
+      border-bottom: 1px solid #03dac6;
     }
     .form-control, .btn {
       background-color: #2d2d2d;
-      border: 1px solid #444;
+      border: 1px solid #03dac6;
       color: #fff;
     }
     .btn-primary {
       background-color: #03dac6;
       border: none;
+      transition: background-color 0.3s ease;
     }
     .btn-primary:hover {
       background-color: #02b3a4;
     }
     .metrics-box {
-      background-color: #2d2d2d;
+      background-color: #1e1e1e;
       padding: 15px;
-      border-radius: 5px;
+      border-radius: 8px;
       margin-bottom: 15px;
       text-align: center;
-      border: 1px solid #444;
+      border: 2px solid #03dac6;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .metrics-box:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px #03dac6;
     }
     .metrics-box h5 {
       color: #03dac6;
@@ -59,6 +72,19 @@
     }
     .alert-custom {
       margin-top: 15px;
+    }
+    footer {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #b3b3b3;
+    }
+    footer a {
+      color: #03dac6;
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -83,19 +109,19 @@
           </div>
           <div class="form-row">
             <div class="form-group col-md-3">
-              <label for="kp">Proportional Gain (Kp)</label>
+              <label for="kp">Proportional Gain (\(K_p\))</label>
               <input type="number" class="form-control" id="kp" value="1" step="0.1">
             </div>
             <div class="form-group col-md-3">
-              <label for="ki">Integral Gain (Ki)</label>
+              <label for="ki">Integral Gain (\(K_i\))</label>
               <input type="number" class="form-control" id="ki" value="0.5" step="0.1">
             </div>
             <div class="form-group col-md-3">
-              <label for="kd">Derivative Gain (Kd)</label>
+              <label for="kd">Derivative Gain (\(K_d\))</label>
               <input type="number" class="form-control" id="kd" value="0.1" step="0.1">
             </div>
             <div class="form-group col-md-3">
-              <label for="N">Derivative Filter Coefficient (N)</label>
+              <label for="N">Derivative Filter Coefficient (\(N\))</label>
               <input type="number" class="form-control" id="N" value="10" step="1">
             </div>
           </div>
@@ -141,6 +167,11 @@
         </div>
       </div>
     </div>
+    
+    <!-- Footer with creator info and email icon -->
+    <footer>
+      <p>Made by Adeel Ahsan &nbsp; <a href="mailto:maahsan@mun.ca" title="Email Adeel Ahsan"><i class="fa-solid fa-envelope"></i></a></p>
+    </footer>
   </div>
   
   <!-- Include jQuery, Bootstrap JS, and Plotly JS -->
@@ -149,7 +180,7 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script>
     async function analyze() {
-      // Clear previous outputs and errors, show loading spinners
+      // Clear previous outputs and errors, show loading spinners.
       document.getElementById("error-message").classList.add("d-none");
       document.getElementById("bode-plot").classList.add("d-none");
       document.getElementById("step-response").classList.add("d-none");
@@ -177,7 +208,7 @@
           throw new Error(result.error);
         }
         
-        // Plot interactive Bode Plot using Plotly and bode_data from backend.
+        // Plot interactive Bode Plot using Plotly with bode_data from the backend.
         const bodeData = result.bode_data;
         if (!bodeData) {
           throw new Error("No bode_data received from backend.");
