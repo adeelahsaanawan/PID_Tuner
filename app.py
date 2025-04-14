@@ -26,9 +26,9 @@ def analyze():
         data = request.get_json()
         plant_num = [float(x) for x in data.get("plant_num", "").split(",")]
         plant_den = [float(x) for x in data.get("plant_den", "").split(",")]
-        kp = float(data.get("kp", 1))
-        ki = float(data.get("ki", 0.5))
-        kd = float(data.get("kd", 0.1))
+        kp = float(data.get("kp", 8))
+        ki = float(data.get("ki", 0.1))
+        kd = float(data.get("kd", 8))
         # Use derivative filter time constant Tf instead of N; defaulting to 0.01
         Tf = float(data.get("Tf", 0.01))
         
