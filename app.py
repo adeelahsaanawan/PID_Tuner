@@ -22,7 +22,7 @@ def index():
 @app.route("/analyze", methods=["POST"])
 def analyze():
     try:
-        # 1) Parse request data
+        # Get data from the request JSON
         data = request.get_json()
         plant_num = [float(x) for x in data.get("plant_num", "").split(",")]
         plant_den = [float(x) for x in data.get("plant_den", "").split(",")]
@@ -31,66 +31,68 @@ def analyze():
         kd = float(data.get("kd", 0.1))
         N = float(data.get("N", 10))  # Derivative filter coefficient
 
-        # 2) Build Plant: G(s)
+        # Build the plant G(s)
         G = tf(plant_num, plant_den)
 
-        # 3) Build Filtered PID: C(s) = Kp + Ki/s + (Kd*N*s)/(1+N*s)
-        #    Combine into a single rational function => Numerator and Denominator
-        C_num = [N*(kp+kd), (kp + ki*N), ki]
+        # Build the filtered PID controller:
+        # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N * s)
+        # Combined as a single rational function:
+        #   Numerator: [N*(Kp+Kd), (Kp+Ki*N), Ki]
+        #   Denom: [N, 1, 0]
+        C_num = [N * (kp + kd), (kp + ki * N), ki]
         C_den = [N, 1, 0]
         C = tf(C_num, C_den)
 
-        # 4) Open-Loop Transfer Function: L(s) = G(s)*C(s)
+        # Open-loop transfer function L(s) = G(s)*C(s)
         L = G * C
 
-        # 5) Closed-Loop Transfer Function: T(s)=L(s)/(1+L(s))
+        # Closed-loop transfer function T(s) = L(s) / [1 + L(s)]
         T = feedback(L, 1)
 
-        # 6) Compute margins and sanitize them
+        # Compute gain and phase margins.
         gm, pm, wcg, wcp = margin(L)
-        gain_margin_dB = 20*np.log10(gm) if gm > 0 else None
+        gain_margin_dB = 20 * np.log10(gm) if gm > 0 else None
+
+        # Sanitize outputs to remove non-finite values
         gain_margin_dB = sanitize(gain_margin_dB)
-        pm  = sanitize(pm)
+        pm = sanitize(pm)
         wcg = sanitize(wcg)
         wcp = sanitize(wcp)
 
-        # 7) Step Response of T(s), 0..10 sec
+        # Simulate step response (0 to 10 sec)
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
 
-        # 8) Performance metrics (rise time, settling time, overshoot, etc.)
+        # Compute performance metrics using step_info (returns a dictionary)
         info = step_info(T)
         ss_val = dcgain(T)
         steady_state_error = abs(1 - ss_val)
 
-        # 9) Prepare results (sanitized for JSON)
         result = {
-            "gain_margin_dB":  sanitize(gain_margin_dB),
+            "gain_margin_dB": gain_margin_dB,
             "phase_margin_deg": sanitize(pm),
-            "wcg":              sanitize(wcg),
-            "wcp":              sanitize(wcp),
-            "rise_time":        sanitize(info["RiseTime"]),
-            "settling_time":    sanitize(info["SettlingTime"]),
-            "overshoot":        sanitize(info["Overshoot"]),
+            "wcg": sanitize(wcg),
+            "wcp": sanitize(wcp),
+            "rise_time": sanitize(info["RiseTime"]),
+            "settling_time": sanitize(info["SettlingTime"]),
+            "overshoot": sanitize(info["Overshoot"]),
             "steady_state_error": sanitize(steady_state_error),
             "step_response": {
-                "time":     t_out.tolist(),
+                "time": t_out.tolist(),
                 "response": y_out.tolist()
             }
         }
 
-        # 10) Frequency Response for Bode Data (UNWRAPPED Phase, in dB)
-        omega = np.logspace(-2, 2, 100)               # freq range from 10^-2 to 10^2 rad/s
-        resp = control.frequency_response(L, omega)   # complex array
-        mag_db = 20 * np.log10(np.abs(resp))          # magnitude in dB
-        phase_rad = np.angle(resp)                    # raw phase in radians
-        phase_unwrapped = np.unwrap(phase_rad)        # remove discontinuities
-        phase_deg = (phase_unwrapped * 180.0 / np.pi) # convert to degrees
-
+        # Generate Bode plot data using control.bode() (earlier method)
+        # Use the bode() function with plot=False to get the arrays.
+        # With dB=True, the magnitude is already in dB.
+        mag, phase, omega = control.bode(L, dB=True, plot=False)
+        # Convert phase from radians to degrees.
+        phase_deg = (phase * 180 / np.pi).tolist()
         bode_data = {
-            "omega":         omega.tolist(),
-            "magnitude_db":  mag_db.tolist(),
-            "phase_deg":     phase_deg.tolist()
+            "omega": omega.tolist(),
+            "magnitude_db": mag.tolist(),
+            "phase_deg": phase_deg
         }
         result["bode_data"] = bode_data
 
