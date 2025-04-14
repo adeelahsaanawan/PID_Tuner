@@ -29,18 +29,19 @@ def analyze():
         kp = float(data.get("kp", 1))
         ki = float(data.get("ki", 0.5))
         kd = float(data.get("kd", 0.1))
-        N = float(data.get("N", 10))  # Derivative filter coefficient
-
+        # Use derivative filter time constant Tf instead of N; defaulting to 0.01
+        Tf = float(data.get("Tf", 0.01))
+        
         # Build the plant G(s)
         G = tf(plant_num, plant_den)
 
-        # Build the filtered PID controller:
-        # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N * s)
-        # Combined as a single rational function:
-        #   Numerator: [N*(Kp+Kd), (Kp+Ki*N), Ki]
-        #   Denom: [N, 1, 0]
-        C_num = [N * (kp + kd), (kp + ki * N), ki]
-        C_den = [N, 1, 0]
+        # Build the filtered PID controller using Tf:
+        # C(s) = Kp + Ki/s + (Kd*s)/(Tf*s + 1)
+        # Combined as a single transfer function:
+        #   Numerator:   (kp*Tf + kd) * s^2 + (kp + ki*Tf) * s + ki
+        #   Denom:       s * (Tf*s + 1)
+        C_num = [kp * Tf + kd, (kp + ki * Tf), ki]
+        C_den = [Tf, 1, 0]
         C = tf(C_num, C_den)
 
         # Open-loop transfer function L(s) = G(s)*C(s)

@@ -122,7 +122,7 @@
            title="Overall Instructions"
            data-content="Use this tool to tune your PID controller. Define your plant by providing the numerator and denominator coefficients.<br><br>
 For example, if your plant is defined by the transfer function 
-\( G(s)=\frac{1}{s^2+5s+6} \), then enter <code>1</code> for the numerator and <code>1, 5, 6</code> for the denominator.<br><br>
+\( G(s)=\frac{s+2}{s^2+5s+6} \), then enter <code>1,2</code> for the numerator and <code>1, 5, 6</code> for the denominator.<br><br>
 Adjust the PID parameters to modify the control response."></i>
       </div>
       <div class="card-body">
@@ -135,7 +135,7 @@ Adjust the PID parameters to modify the control response."></i>
                  data-toggle="popover" data-trigger="focus" data-html="true"
                  title="Plant Numerator Coefficients"
                  data-content="Enter the coefficients for the numerator of the plant transfer function.<br><br>
-For example, for \( G(s)=\frac{1}{s^2+5s+6} \), use: <code>1</code>"></i>
+For example, for \( G(s)=\frac{s+2}{s^2+5s+6} \), use: <code>1,2</code>"></i>
             </label>
             <input type="text" class="form-control" id="plant-num" placeholder="e.g., 1,2" value="1,2">
           </div>
@@ -152,12 +152,13 @@ For example, for \( G(s)=\frac{1}{s^2+5s+6} \), use: <code>1, 5, 6</code>"></i>
           </div>
           
           <!-- PID Controller Section -->
-          <!-- Display the updated control input law above the PID gain inputs -->
+          <!-- Display the updated control law above the PID gain inputs -->
           <div class="help-text">
             Control Input Law:
             <br>
-            \( u(t)=K_p\,e(t)+K_i\int_0^t e(\tau)d\tau+K_d\frac{N s}{1+N s}\,e(t) \)
-          </div>
+            \( u(t)=K_p\,e(t)+K_i\int_0^t e(\tau)d\tau+K_d\frac{s}{T_f s+1}\,e(t) \)
+            <br>
+  </div>
           
           <!-- Help button for PID parameter explanation -->
           <div class="form-group">
@@ -169,8 +170,8 @@ For example, for \( G(s)=\frac{1}{s^2+5s+6} \), use: <code>1, 5, 6</code>"></i>
                  data-content="\(K_p\) (Proportional Gain): Affects the overall gain and response speed.<br><br>
 \(K_i\) (Integral Gain): Eliminates steady-state error but can slow down the response.<br><br>
 \(K_d\) (Derivative Gain): Enhances stability and reduces overshoot; applied as a filtered derivative.<br><br>
-\(N\) (Derivative Filter Coefficient): Determines the speed of the derivative filter which mitigates noise.<br><br>
-Note: \(K_p\) and \(K_d\) primarily influence gain/phase margins, while \(K_i\) and \(N\) affect time response parameters (e.g., rise and settling times)."></i>
+\(T_f\) (Derivative Filter Time Constant): Determines the filtering of the derivative term to mitigate noise.<br><br>
+Note: \(K_p\) and \(K_d\) primarily influence gain/phase margins, while \(K_i\) and \(T_f\) affect time response parameters (e.g., rise and settling times)."></i>
             </label>
           </div>
           
@@ -199,28 +200,28 @@ A higher \(K_i\) can slow the response."></i>
             </div>
           </div>
           <div class="form-row">
-            <!-- Lower row: Kd and N -->
+            <!-- Lower row: Kd and Tf -->
             <div class="form-group col-md-6">
               <label for="kd">Derivative Gain (\(K_d\))
                 <i class="fa-solid fa-question-circle help-icon" tabindex="0"
                    data-toggle="popover" data-trigger="focus" data-html="true"
                    title="Derivative Gain (\(K_d\))"
-                   data-content="Acts on the rate of change of the error; applied as a filtered derivative<br><br>
-\( K_d\frac{N s}{1+N s}\,e(t) \) helps reduce noise effects and improve phase margin."></i>
+                   data-content="Acts on the rate of change of the error; applied as a filtered derivative.<br><br>
+\( \frac{K_d s}{T_f s+1}\,e(t) \) helps reduce noise effects and improve phase margin."></i>
               </label>
               <input type="number" class="form-control" id="kd" value="0.1" step="0.1">
             </div>
             <div class="form-group col-md-6">
-              <label for="N">Derivative Filter Coefficient (\(N\))
+              <label for="Tf">Derivative Filter Time Constant (\(T_f\))
                 <i class="fa-solid fa-question-circle help-icon" tabindex="0"
                    data-toggle="popover" data-trigger="focus" data-html="true"
-                   title="Derivative Filter Coefficient (\(N\))"
-                   data-content="Sets the speed of the derivative filter; a larger \(N\) results in a faster filter to mitigate high frequency noise."></i>
+                   title="Derivative Filter Time Constant (\(T_f\))"
+                   data-content="Sets the time constant of the derivative filter; a smaller \(T_f\) results in less filtering (faster response) but may amplify noise."></i>
               </label>
-              <input type="number" class="form-control" id="N" value="10" step="1">
+              <input type="number" class="form-control" id="Tf" value="0.01" step="0.001">
             </div>
           </div>
-          <button type="button" class="btn btn-primary btn-block" onclick="analyze()">Analyze System</button>
+          <button type="button" class="btn btn-primary btn-block" onclick="analyze()">Analyze Controller</button>
         </form>
       </div>
     </div>
@@ -228,7 +229,7 @@ A higher \(K_i\) can slow the response."></i>
     <!-- Output Card: Displays analysis of the PID controller -->
     <div class="card">
       <div class="card-header">
-        <h4 class="mb-0">System Analysis</h4>
+        <h4 class="mb-0">Design Analysis</h4>
       </div>
       <div class="card-body">
         <!-- Error Alert: Displays any errors from the backend -->
@@ -303,7 +304,7 @@ A higher \(K_i\) can slow the response."></i>
         kp: document.getElementById("kp").value,
         ki: document.getElementById("ki").value,
         kd: document.getElementById("kd").value,
-        N: document.getElementById("N").value
+        Tf: document.getElementById("Tf").value
       };
       
       try {
