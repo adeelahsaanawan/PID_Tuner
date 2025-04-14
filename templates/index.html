@@ -137,7 +137,7 @@
         <!-- Performance Metrics Section -->
         <h5>Performance Metrics</h5>
         <div id="metrics" class="row">
-          <!-- Metrics will be populated here -->
+          <!-- Metrics boxes will be populated here -->
         </div>
       </div>
     </div>
@@ -167,7 +167,6 @@
       };
       
       try {
-        // Send POST request to the Flask backend
         const response = await fetch("/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -178,10 +177,10 @@
           throw new Error(result.error);
         }
         
-        // Plot the interactive Bode plot using Plotly, using bode_data from backend.
+        // Use Plotly to create the interactive Bode plot.
         const bodeData = result.bode_data;
         if (!bodeData) {
-          throw new Error("Backend did not return bode_data.");
+          throw new Error("No bode_data received from backend.");
         }
         const magnitudeTrace = {
           x: bodeData.omega,
@@ -213,7 +212,7 @@
             document.getElementById("bode-plot").classList.remove("d-none");
           });
         
-        // Plot the Step Response using Plotly
+        // Plot the Step Response using Plotly.
         const stepTrace = {
           x: result.step_response.time,
           y: result.step_response.response,
@@ -234,7 +233,7 @@
             document.getElementById("step-response").classList.remove("d-none");
           });
         
-        // Display performance metrics in styled boxes
+        // Display performance metrics in styled boxes.
         const metricsData = [
           { label: "Gain Margin (dB)", value: result.gain_margin_dB ? result.gain_margin_dB.toFixed(2) : "N/A" },
           { label: "Phase Margin (°)", value: result.phase_margin_deg ? result.phase_margin_deg.toFixed(2) : "N/A" },
@@ -257,7 +256,7 @@
         });
         document.getElementById("metrics").innerHTML = metricsHtml;
       } catch (err) {
-        // Hide any loading indicators and display error message
+        // Hide loading indicators and show error message.
         document.getElementById("bode-loading").classList.add("d-none");
         document.getElementById("step-loading").classList.add("d-none");
         document.getElementById("error-message").classList.remove("d-none");
