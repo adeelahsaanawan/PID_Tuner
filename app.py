@@ -29,45 +29,46 @@ def analyze():
         kp = float(data.get("kp", 1))
         ki = float(data.get("ki", 0.5))
         kd = float(data.get("kd", 0.1))
+        # Use derivative filter time constant Tf instead of N; defaulting to 0.01
         Tf = float(data.get("Tf", 0.01))
         
         # Build the plant G(s)
         G = tf(plant_num, plant_den)
-        
-        # Build the filtered PID controller:
+
+        # Build the filtered PID controller using Tf:
         # C(s) = Kp + Ki/s + (Kd*s)/(Tf*s + 1)
-        # Combined into one transfer function:
-        #    Numerator: (kp*Tf + kd) * s^2 + (kp + ki*Tf) * s + ki
-        #    Denom:     s * (Tf*s + 1)
+        # Combined as a single transfer function:
+        #   Numerator:   (kp*Tf + kd) * s^2 + (kp + ki*Tf) * s + ki
+        #   Denom:       s * (Tf*s + 1)
         C_num = [kp * Tf + kd, (kp + ki * Tf), ki]
         C_den = [Tf, 1, 0]
         C = tf(C_num, C_den)
-        
+
         # Open-loop transfer function L(s) = G(s)*C(s)
         L = G * C
-        
+
         # Closed-loop transfer function T(s) = L(s) / (1 + L(s))
         T = feedback(L, 1)
-        
+
         # Compute gain and phase margins.
         gm, pm, wcg, wcp = margin(L)
         gain_margin_dB = 20 * np.log10(gm) if gm > 0 else None
-        
+
         # Sanitize outputs
         gain_margin_dB = sanitize(gain_margin_dB)
         pm = sanitize(pm)
         wcg = sanitize(wcg)
         wcp = sanitize(wcp)
-        
+
         # Simulate step response (0 to 10 sec)
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
-        
+
         # Compute performance metrics using step_info (returns a dictionary)
         info = step_info(T)
         ss_val = dcgain(T)
         steady_state_error = abs(1 - ss_val)
-        
+
         result = {
             "gain_margin_dB": gain_margin_dB,
             "phase_margin_deg": sanitize(pm),
@@ -82,12 +83,13 @@ def analyze():
                 "response": y_out.tolist()
             }
         }
-        
+
         # Generate Bode plot data manually over 10^-2 to 10^2:
-        omega = np.logspace(-2, 2, 100)
+        omega = np.logspace(-2, 2, 100)  # Frequency range from 10^-2 to 10^2 rad/s
+        # Call control.bode() with dB=False to get linear magnitude
         mag_linear, phase, _ = control.bode(L, omega, dB=False, plot=False)
-        mag_db = (20 * np.log10(mag_linear)).tolist()
-        phase_deg = (phase * 180 / np.pi).tolist()
+        mag_db = (20 * np.log10(mag_linear)).tolist()  # Convert linear magnitude to dB
+        phase_deg = (phase * 180 / np.pi).tolist()     # Convert phase from radians to degrees
         
         bode_data = {
             "omega": omega.tolist(),
@@ -95,7 +97,7 @@ def analyze():
             "phase_deg": phase_deg
         }
         result["bode_data"] = bode_data
-        
+
         return jsonify(result)
     except Exception as e:
         traceback.print_exc()
