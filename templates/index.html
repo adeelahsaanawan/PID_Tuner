@@ -278,6 +278,15 @@ A higher \(K_i\) can slow the response."></i>
   <!-- Include Plotly from local static folder -->
   <script src="{{ url_for('static', filename='plotly-latest.min.js') }}"></script>
   <script>
+    // Fallback to an alternate CDN if Plotly is undefined
+    if (typeof Plotly === 'undefined') {
+      var script = document.createElement('script');
+      script.src = 'https://unpkg.com/plotly.js-dist@latest/plotly.min.js';
+      document.head.appendChild(script);
+    }
+  </script>
+
+  <script>
     // Initialize all popovers with HTML enabled
     $(function () {
       $('[data-toggle="popover"]').popover({
