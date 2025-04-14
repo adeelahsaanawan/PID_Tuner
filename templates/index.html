@@ -183,7 +183,7 @@ Note: \(K_p\) and \(K_d\) primarily influence gain/phase margins, while \(K_i\) 
                    data-content="Sets the contribution of the error to the controller output.<br><br>
 Increasing \(K_p\) speeds up the response but may cause overshoot and reduce gain margin."></i>
               </label>
-              <input type="number" class="form-control" id="kp" value="1" step="0.1">
+              <input type="number" class="form-control" id="kp" value="8" step="0.1">
             </div>
             <div class="form-group col-md-6">
               <label for="ki">Integral Gain (\(K_i\))
@@ -193,7 +193,7 @@ Increasing \(K_p\) speeds up the response but may cause overshoot and reduce gai
                    data-content="Accumulates the error over time to eliminate steady-state error.<br><br>
 A higher \(K_i\) can slow the response."></i>
               </label>
-              <input type="number" class="form-control" id="ki" value="0.5" step="0.1">
+              <input type="number" class="form-control" id="ki" value="0.1" step="0.1">
             </div>
           </div>
           <div class="form-row">
@@ -206,7 +206,7 @@ A higher \(K_i\) can slow the response."></i>
                    data-content="Acts on the rate of change of the error; applied as a filtered derivative.<br><br>
 \( \frac{K_d s}{T_f s+1}\,e(t) \) helps reduce noise effects and improve phase margin."></i>
               </label>
-              <input type="number" class="form-control" id="kd" value="0.1" step="0.1">
+              <input type="number" class="form-control" id="kd" value="8" step="0.1">
             </div>
             <div class="form-group col-md-6">
               <label for="Tf">Derivative Filter Time Constant (\(T_f\))
