@@ -43,7 +43,7 @@ def analyze():
         C_den = [N, 1, 0]
         C = tf(C_num, C_den)
 
-        # Open-loop transfer function L(s) = G(s)*C(s)
+        # Loop Shape transfer function L(s) = G(s)*C(s)
         L = G * C
 
         # Closed-loop transfer function T(s) = L(s) / [1 + L(s)]
