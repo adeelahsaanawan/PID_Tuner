@@ -38,9 +38,9 @@ def analyze():
         G = tf(plant_num, plant_den)
 
         # Build the filtered PID controller:
-        # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N * s)
+        # C(s) = Kp + Ki/s + (Kd * N * s)/(1 + N * s)
         # Combined to a single rational function:
-        #   Numerator: [N*(Kp+Kd), (Kp + Ki*N), Ki]
+        #   Numerator: [N*(Kp+Kd), (Kp+Ki*N), Ki]
         #   Denom: [N, 1, 0]
         C_num = [N * (kp + kd), (kp + ki * N), ki]
         C_den = [N, 1, 0]
@@ -62,7 +62,7 @@ def analyze():
         wcg = sanitize(wcg)
         wcp = sanitize(wcp)
 
-        # Simulate step response (0 to 10 sec)
+        # Simulate step response (0 to 10 seconds)
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
 
@@ -86,14 +86,18 @@ def analyze():
             }
         }
 
-        # Generate interactive Bode data using frequency_response
-        # Create a logarithmically spaced frequency array
+        # Generate interactive Bode plot data using frequency_response.
+        # Create logarithmically spaced frequency array.
         omega = np.logspace(-2, 2, 100)
-        # frequency_response returns a complex response array
+        # Compute the frequency response (complex values)
         resp = control.frequency_response(L, omega)
-        # Compute magnitude in dB and phase in degrees
+        # Compute magnitude in dB.
         mag_db = 20 * np.log10(np.abs(resp))
-        phase_deg = np.angle(resp, deg=True)
+        # Compute phase in radians and unwrap it.
+        phase_rad = np.angle(resp)
+        phase_rad_unwrapped = np.unwrap(phase_rad)
+        phase_deg = phase_rad_unwrapped * 180 / np.pi
+
         bode_data = {
             "omega": omega.tolist(),
             "magnitude_db": mag_db.tolist(),
