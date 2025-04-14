@@ -177,7 +177,7 @@
           throw new Error(result.error);
         }
         
-        // Use Plotly to create the interactive Bode plot.
+        // Plot interactive Bode Plot using Plotly and bode_data from backend.
         const bodeData = result.bode_data;
         if (!bodeData) {
           throw new Error("No bode_data received from backend.");
@@ -212,7 +212,7 @@
             document.getElementById("bode-plot").classList.remove("d-none");
           });
         
-        // Plot the Step Response using Plotly.
+        // Plot Step Response using Plotly.
         const stepTrace = {
           x: result.step_response.time,
           y: result.step_response.response,
@@ -256,7 +256,6 @@
         });
         document.getElementById("metrics").innerHTML = metricsHtml;
       } catch (err) {
-        // Hide loading indicators and show error message.
         document.getElementById("bode-loading").classList.add("d-none");
         document.getElementById("step-loading").classList.add("d-none");
         document.getElementById("error-message").classList.remove("d-none");
