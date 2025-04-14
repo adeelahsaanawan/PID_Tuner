@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <!-- MathJax for LaTeX rendering -->
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async
+  <script id="MathJax-script" async 
           src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
   </script>
   <style>
@@ -158,7 +158,7 @@ For example, for \( G(s)=\frac{1}{s^2+5s+6} \), use: <code>1, 5, 6</code>"></i>
             <br>
             \( u(t)=K_p\,e(t)+K_i\int_0^t e(\tau)d\tau+K_d\frac{s}{T_f s+1}\,e(t) \)
             <br>
-  </div>
+          </div>
           
           <!-- Help button for PID parameter explanation -->
           <div class="form-group">
@@ -232,10 +232,10 @@ A higher \(K_i\) can slow the response."></i>
         <h4 class="mb-0">Design Analysis</h4>
       </div>
       <div class="card-body">
-        <!-- Error Alert: Displays any errors from the backend -->
+        <!-- Error/Warning Alert: Displays any errors or warnings from the backend -->
         <div id="error-message" class="alert alert-danger alert-custom d-none"></div>
         
-        <!-- Arrange Bode and Step Response plots in two columns -->
+        <!-- Plot Section: Arrange Bode and Step Response plots in two columns -->
         <div class="row">
           <div class="col-md-6">
             <div class="plot-container">
@@ -267,7 +267,7 @@ A higher \(K_i\) can slow the response."></i>
       </div>
     </div>
     
-    <!-- Footer: Displays creator info and email link -->
+    <!-- Footer -->
     <footer>
       <p>Made by Adeel Ahsan &nbsp; <a href="mailto:maahsan@mun.ca" title="Email Adeel Ahsan"><i class="fa-solid fa-envelope"></i></a></p>
     </footer>
@@ -278,19 +278,18 @@ A higher \(K_i\) can slow the response."></i>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script>
-    // Initialize all popovers with HTML enabled
+    // Initialize popovers (HTML enabled) and re-typeset MathJax on show
     $(function () {
       $('[data-toggle="popover"]').popover({
         html: true,
         sanitize: false
       }).on('shown.bs.popover', function () {
-        // Re-render MathJax when the popover is shown
         MathJax.typesetPromise();
       });
     });
     
     async function analyze() {
-      // Clear previous outputs and errors, show loading spinners.
+      // Clear previous outputs and errors/warnings; show loading spinners.
       document.getElementById("error-message").classList.add("d-none");
       document.getElementById("bode-plot").classList.add("d-none");
       document.getElementById("step-response").classList.add("d-none");
@@ -316,6 +315,17 @@ A higher \(K_i\) can slow the response."></i>
         const result = await response.json();
         if(result.error) {
           throw new Error(result.error);
+        }
+        
+        // Display warnings if any are returned.
+        if(result.warnings && result.warnings.length > 0) {
+          let warningsHtml = '<div class="alert alert-warning" role="alert">';
+          result.warnings.forEach(msg => {
+            warningsHtml += `<p>${msg}</p>`;
+          });
+          warningsHtml += '</div>';
+          document.getElementById("error-message").innerHTML = warningsHtml;
+          document.getElementById("error-message").classList.remove("d-none");
         }
         
         // Plot interactive Bode Plot using Plotly.
@@ -421,6 +431,10 @@ A higher \(K_i\) can slow the response."></i>
             value: (result.steady_state_error !== null && isFinite(result.steady_state_error)) 
                     ? (result.steady_state_error === 0 ? "0.00" : result.steady_state_error.toFixed(2)) 
                     : "N/A"
+          },
+          { 
+            label: "System Stability", 
+            value: result.stability ? result.stability : "N/A"
           }
         ];
 
