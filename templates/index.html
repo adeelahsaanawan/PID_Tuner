@@ -86,6 +86,20 @@
     footer a:hover {
       text-decoration: underline;
     }
+    .help-icon {
+      margin-left: 5px;
+      color: #03dac6;
+      cursor: pointer;
+    }
+    .help-text {
+      font-size: 0.9rem;
+      color: #aaaaaa;
+      margin-bottom: 10px;
+    }
+    /* Adjust output card plot size */
+    .plot-container {
+      min-height: 300px;
+    }
   </style>
 </head>
 <body>
@@ -94,34 +108,109 @@
     
     <!-- Input Card -->
     <div class="card">
-      <div class="card-header">
+      <div class="card-header d-flex justify-content-between align-items-center">
         <h4 class="mb-0">System &amp; PID Parameters</h4>
+        <!-- Help button for overall instructions -->
+        <i class="fa-solid fa-question-circle help-icon" tabindex="0"
+           data-toggle="popover" data-trigger="focus" data-html="true"
+           title="Overall Instructions"
+           data-content="Use this tool to tune your PID controller. Define your plant by providing the numerator and denominator coefficients.<br><br>
+For example, if your plant is defined by the transfer function 
+\( G(s)=\frac{1}{s^2+5s+6} \), then enter <code>1</code> for the numerator and <code>1, 5, 6</code> for the denominator.<br><br>
+Adjust the PID parameters to modify the control response."></i>
       </div>
       <div class="card-body">
         <form id="pidForm">
+          <!-- Plant Coefficients Section -->
           <div class="form-group">
-            <label for="plant-num">Plant Numerator Coefficients</label>
+            <label for="plant-num">Plant Numerator Coefficients
+              <!-- Help icon for plant numerator -->
+              <i class="fa-solid fa-question-circle help-icon" tabindex="0"
+                 data-toggle="popover" data-trigger="focus" data-html="true"
+                 title="Plant Numerator Coefficients"
+                 data-content="Enter the coefficients for the numerator of the plant transfer function.<br><br>
+For example, for \( G(s)=\frac{1}{s^2+5s+6} \), use: <code>1</code>"></i>
+            </label>
             <input type="text" class="form-control" id="plant-num" placeholder="e.g., 1,2" value="1,2">
           </div>
           <div class="form-group">
-            <label for="plant-den">Plant Denominator Coefficients</label>
+            <label for="plant-den">Plant Denominator Coefficients
+              <!-- Help icon for plant denominator -->
+              <i class="fa-solid fa-question-circle help-icon" tabindex="0"
+                 data-toggle="popover" data-trigger="focus" data-html="true"
+                 title="Plant Denominator Coefficients"
+                 data-content="Enter the coefficients for the denominator of the plant transfer function.<br><br>
+For example, for \( G(s)=\frac{1}{s^2+5s+6} \), use: <code>1, 5, 6</code>"></i>
+            </label>
             <input type="text" class="form-control" id="plant-den" placeholder="e.g., 1,5,6" value="1,5,6">
           </div>
+          
+          <!-- PID Controller Section -->
+          <!-- Display the updated control input law above the PID gain inputs -->
+          <div class="help-text">
+            Control Input Law: 
+            <br>
+            \( u(t)=K_p\,e(t)+K_i\int_0^t e(\tau)d\tau+K_d\frac{N s}{1+N s}\,e(t) \)
+          </div>
+          
+          <!-- Help button for PID parameter explanation -->
+          <div class="form-group">
+            <label>
+              PID Parameter Details
+              <i class="fa-solid fa-question-circle help-icon" tabindex="0"
+                 data-toggle="popover" data-trigger="focus" data-html="true"
+                 title="PID Parameter Details"
+                 data-content="\(K_p\) (Proportional Gain): Affects the overall gain and response speed.<br><br>
+\(K_i\) (Integral Gain): Eliminates steady-state error but can slow down the response.<br><br>
+\(K_d\) (Derivative Gain): Enhances stability and reduces overshoot; applied as a filtered derivative.<br><br>
+\(N\) (Derivative Filter Coefficient): Determines the speed of the derivative filter which mitigates noise.<br><br>
+Note: \(K_p\) and \(K_d\) primarily influence gain/phase margins, while \(K_i\) and \(N\) affect time response parameters (e.g., rise and settling times)."></i>
+            </label>
+          </div>
+          
+          <!-- Arrange the PID input fields in two rows -->
           <div class="form-row">
-            <div class="form-group col-md-3">
-              <label for="kp">Proportional Gain (\(K_p\))</label>
+            <!-- Upper row: Kp and Ki -->
+            <div class="form-group col-md-6">
+              <label for="kp">Proportional Gain (\(K_p\))
+                <i class="fa-solid fa-question-circle help-icon" tabindex="0"
+                   data-toggle="popover" data-trigger="focus" data-html="true"
+                   title="Proportional Gain (\(K_p\))"
+                   data-content="Sets the contribution of the error to the controller output.<br><br>
+Increasing \(K_p\) speeds up the response but may cause overshoot and reduce gain margin."></i>
+              </label>
               <input type="number" class="form-control" id="kp" value="1" step="0.1">
             </div>
-            <div class="form-group col-md-3">
-              <label for="ki">Integral Gain (\(K_i\))</label>
+            <div class="form-group col-md-6">
+              <label for="ki">Integral Gain (\(K_i\))
+                <i class="fa-solid fa-question-circle help-icon" tabindex="0"
+                   data-toggle="popover" data-trigger="focus" data-html="true"
+                   title="Integral Gain (\(K_i\))"
+                   data-content="Accumulates the error over time to eliminate steady-state error.<br><br>
+A higher \(K_i\) can slow the response."></i>
+              </label>
               <input type="number" class="form-control" id="ki" value="0.5" step="0.1">
             </div>
-            <div class="form-group col-md-3">
-              <label for="kd">Derivative Gain (\(K_d\))</label>
+          </div>
+          <div class="form-row">
+            <!-- Lower row: Kd and N -->
+            <div class="form-group col-md-6">
+              <label for="kd">Derivative Gain (\(K_d\))
+                <i class="fa-solid fa-question-circle help-icon" tabindex="0"
+                   data-toggle="popover" data-trigger="focus" data-html="true"
+                   title="Derivative Gain (\(K_d\))"
+                   data-content="Acts on the rate of change of the error; applied as a filtered derivative<br><br>
+\( K_d\frac{N s}{1+N s}\,e(t) \) helps reduce noise effects and improve phase margin."></i>
+              </label>
               <input type="number" class="form-control" id="kd" value="0.1" step="0.1">
             </div>
-            <div class="form-group col-md-3">
-              <label for="N">Derivative Filter Coefficient (\(N\))</label>
+            <div class="form-group col-md-6">
+              <label for="N">Derivative Filter Coefficient (\(N\))
+                <i class="fa-solid fa-question-circle help-icon" tabindex="0"
+                   data-toggle="popover" data-trigger="focus" data-html="true"
+                   title="Derivative Filter Coefficient (\(N\))"
+                   data-content="Sets the speed of the derivative filter; a larger \(N\) results in a faster filter to mitigate high frequency noise."></i>
+              </label>
               <input type="number" class="form-control" id="N" value="10" step="1">
             </div>
           </div>
@@ -130,60 +219,65 @@
       </div>
     </div>
     
-<!-- Output Card: Displays analysis of the PID controller -->
-<div class="card">
-  <div class="card-header">
-    <h4 class="mb-0">System Analysis</h4>
-  </div>
-  <div class="card-body">
-    <!-- Error Alert: Displays any errors from the backend -->
-    <div id="error-message" class="alert alert-danger alert-custom d-none"></div>
-    
-    <!-- Bode Plot Section: Displays the loop shape L(s) computed as G(s)*C(s)
-         and then used to derive the bode plot data (magnitude and phase) -->
-    <h5>Bode Plot (Loop Shape)</h5>
-    <div id="bode-plot-section" class="text-center mb-4">
-      <div id="bode-loading" class="spinner-container">
-        <div class="spinner-border text-primary" role="status">
-          <span class="sr-only">Loading Bode Plot...</span>
-        </div>
+    <!-- Output Card: Displays analysis of the PID controller -->
+    <div class="card">
+      <div class="card-header">
+        <h4 class="mb-0">Design Analysis</h4>
       </div>
-      <!-- Div for interactive Bode plot (rendered with Plotly) -->
-      <div id="bode-plot" class="d-none"></div>
-    </div>
-    
-    <!-- Step Response Section: Displays the closed-loop step response from 
-         T(s) = L(s)/(1+L(s)), visualized interactively -->
-    <h5>Step Response (Closed-Loop)</h5>
-    <div id="step-response-section" class="mb-4">
-      <div id="step-loading" class="spinner-container">
-        <div class="spinner-border text-primary" role="status">
-          <span class="sr-only">Loading Step Response...</span>
+      <div class="card-body">
+        <!-- Error Alert: Displays any errors from the backend -->
+        <div id="error-message" class="alert alert-danger alert-custom d-none"></div>
+        
+        <!-- Arrange Bode and Step Response plots in two columns -->
+        <div class="row">
+          <div class="col-md-6 plot-container">
+            <h5>Bode Plot (Loop Shape)</h5>
+            <div id="bode-loading" class="spinner-container">
+              <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading Bode Plot...</span>
+              </div>
+            </div>
+            <div id="bode-plot" class="d-none"></div>
+          </div>
+          <div class="col-md-6 plot-container">
+            <h5>Step Response (Closed-Loop)</h5>
+            <div id="step-loading" class="spinner-container">
+              <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading Step Response...</span>
+              </div>
+            </div>
+            <div id="step-response" class="d-none"></div>
+          </div>
         </div>
+        
+        <!-- Performance Metrics Section -->
+        <h5 class="mt-4">Performance Metrics</h5>
+        <div id="metrics" class="row"></div>
       </div>
-      <div id="step-response" class="d-none"></div>
     </div>
     
-    <!-- Performance Metrics Section: Displays computed metrics such as rise time,
-         settling time, overshoot, gain/phase margins, and steady-state error -->
-    <h5>Performance Metrics</h5>
-    <div id="metrics" class="row">
-      <!-- Metrics boxes will be populated here -->
-    </div>
+    <!-- Footer: Displays creator info and email link -->
+    <footer>
+      <p>Made by Adeel Ahsan &nbsp; <a href="mailto:maahsan@mun.ca" title="Email Adeel Ahsan"><i class="fa-solid fa-envelope"></i></a></p>
+    </footer>
   </div>
-</div>
-
-<!-- Footer: Displays creator info and email link -->
-<footer>
-  <p>Made by Adeel Ahsan &nbsp; <a href="mailto:maahsan@mun.ca" title="Email Adeel Ahsan"><i class="fa-solid fa-envelope"></i></a></p>
-</footer>
-
   
   <!-- Include jQuery, Bootstrap JS, and Plotly JS -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script>
+    // Initialize all popovers with HTML enabled
+    $(function () {
+      $('[data-toggle="popover"]').popover({
+        html: true,
+        sanitize: false
+      }).on('shown.bs.popover', function () {
+        // Re-render MathJax when the popover is shown
+        MathJax.typesetPromise();
+      });
+    });
+    
     async function analyze() {
       // Clear previous outputs and errors, show loading spinners.
       document.getElementById("error-message").classList.add("d-none");
@@ -213,7 +307,7 @@
           throw new Error(result.error);
         }
         
-        // Plot interactive Bode Plot using Plotly with bode_data from the backend.
+        // Plot interactive Bode Plot using Plotly.
         const bodeData = result.bode_data;
         if (!bodeData) {
           throw new Error("No bode_data received from backend.");
@@ -269,7 +363,7 @@
             document.getElementById("step-response").classList.remove("d-none");
           });
         
-        // Display performance metrics in styled boxes.
+        // Display performance metrics.
         const metricsData = [
           { label: "Gain Margin (dB)", value: result.gain_margin_dB ? result.gain_margin_dB.toFixed(2) : "N/A" },
           { label: "Phase Margin (°)", value: result.phase_margin_deg ? result.phase_margin_deg.toFixed(2) : "N/A" },
