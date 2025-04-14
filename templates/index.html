@@ -96,9 +96,15 @@
       color: #aaaaaa;
       margin-bottom: 10px;
     }
-    /* Adjust output card plot size */
+    /* Ensure Plotly charts don't overflow their container */
     .plot-container {
-      min-height: 300px;
+      min-height: 320px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    /* Force Plotly graphs to respect container width */
+    .plotly-graph-div {
+      max-width: 100% !important;
     }
   </style>
 </head>
@@ -148,7 +154,7 @@ For example, for \( G(s)=\frac{1}{s^2+5s+6} \), use: <code>1, 5, 6</code>"></i>
           <!-- PID Controller Section -->
           <!-- Display the updated control input law above the PID gain inputs -->
           <div class="help-text">
-            Control Input Law: 
+            Control Input Law:
             <br>
             \( u(t)=K_p\,e(t)+K_i\int_0^t e(\tau)d\tau+K_d\frac{N s}{1+N s}\,e(t) \)
           </div>
@@ -222,7 +228,7 @@ A higher \(K_i\) can slow the response."></i>
     <!-- Output Card: Displays analysis of the PID controller -->
     <div class="card">
       <div class="card-header">
-        <h4 class="mb-0">Design Analysis</h4>
+        <h4 class="mb-0">System Analysis</h4>
       </div>
       <div class="card-body">
         <!-- Error Alert: Displays any errors from the backend -->
@@ -230,23 +236,27 @@ A higher \(K_i\) can slow the response."></i>
         
         <!-- Arrange Bode and Step Response plots in two columns -->
         <div class="row">
-          <div class="col-md-6 plot-container">
-            <h5>Bode Plot (Loop Shape)</h5>
-            <div id="bode-loading" class="spinner-container">
-              <div class="spinner-border text-primary" role="status">
-                <span class="sr-only">Loading Bode Plot...</span>
+          <div class="col-md-6">
+            <div class="plot-container">
+              <h5>Bode Plot (Loop Shape)</h5>
+              <div id="bode-loading" class="spinner-container">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="sr-only">Loading Bode Plot...</span>
+                </div>
               </div>
+              <div id="bode-plot" class="d-none"></div>
             </div>
-            <div id="bode-plot" class="d-none"></div>
           </div>
-          <div class="col-md-6 plot-container">
-            <h5>Step Response (Closed-Loop)</h5>
-            <div id="step-loading" class="spinner-container">
-              <div class="spinner-border text-primary" role="status">
-                <span class="sr-only">Loading Step Response...</span>
+          <div class="col-md-6">
+            <div class="plot-container">
+              <h5>Step Response (Closed-Loop)</h5>
+              <div id="step-loading" class="spinner-container">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="sr-only">Loading Step Response...</span>
+                </div>
               </div>
+              <div id="step-response" class="d-none"></div>
             </div>
-            <div id="step-response" class="d-none"></div>
           </div>
         </div>
         
@@ -312,31 +322,36 @@ A higher \(K_i\) can slow the response."></i>
         if (!bodeData) {
           throw new Error("No bode_data received from backend.");
         }
-        const magnitudeTrace = {
+        
+        const bodeMagnitudeTrace = {
           x: bodeData.omega,
           y: bodeData.magnitude_db,
           mode: "lines",
           name: "Magnitude (dB)",
           yaxis: "y1"
         };
-        const phaseTrace = {
+        const bodePhaseTrace = {
           x: bodeData.omega,
           y: bodeData.phase_deg,
           mode: "lines",
           name: "Phase (deg)",
           yaxis: "y2"
         };
+        
         const bodeLayout = {
           title: "Bode Plot (Open-Loop)",
+          autosize: true,
           xaxis: { title: "Frequency (rad/s)", type: "log" },
           yaxis: { title: "Magnitude (dB)", domain: [0, 0.45] },
           yaxis2: { title: "Phase (deg)", domain: [0.55, 1], anchor: "x" },
           paper_bgcolor: "#1e1e1e",
           plot_bgcolor: "#1e1e1e",
           font: { color: "white" },
-          margin: { l: 60, r: 60, t: 50, b: 50 }
+          margin: { l: 60, r: 50, t: 50, b: 50 }
         };
-        Plotly.newPlot("bode-plot", [magnitudeTrace, phaseTrace], bodeLayout)
+        const bodeConfig = { responsive: true };
+        
+        Plotly.newPlot("bode-plot", [bodeMagnitudeTrace, bodePhaseTrace], bodeLayout, bodeConfig)
           .then(() => {
             document.getElementById("bode-loading").classList.add("d-none");
             document.getElementById("bode-plot").classList.remove("d-none");
@@ -349,15 +364,20 @@ A higher \(K_i\) can slow the response."></i>
           mode: "lines",
           name: "Step Response"
         };
+        
         const stepLayout = {
           title: "Step Response",
+          autosize: true,
           xaxis: { title: "Time (s)" },
           yaxis: { title: "Response" },
           paper_bgcolor: "#1e1e1e",
           plot_bgcolor: "#1e1e1e",
-          font: { color: "white" }
+          font: { color: "white" },
+          margin: { l: 60, r: 50, t: 50, b: 50 }
         };
-        Plotly.newPlot("step-response", [stepTrace], stepLayout)
+        const stepConfig = { responsive: true };
+        
+        Plotly.newPlot("step-response", [stepTrace], stepLayout, stepConfig)
           .then(() => {
             document.getElementById("step-loading").classList.add("d-none");
             document.getElementById("step-response").classList.remove("d-none");
