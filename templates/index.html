@@ -130,49 +130,54 @@
       </div>
     </div>
     
-    <!-- Output Card -->
-    <div class="card">
-      <div class="card-header">
-        <h4 class="mb-0">System Analysis</h4>
-      </div>
-      <div class="card-body">
-        <!-- Error Alert -->
-        <div id="error-message" class="alert alert-danger alert-custom d-none"></div>
-        
-        <!-- Bode Plot Section -->
-        <h5>Bode Plot (Open-Loop)</h5>
-        <div id="bode-plot-section" class="text-center mb-4">
-          <div id="bode-loading" class="spinner-container">
-            <div class="spinner-border text-primary" role="status">
-              <span class="sr-only">Loading Bode Plot...</span>
-            </div>
-          </div>
-          <!-- Div for interactive Bode plot -->
-          <div id="bode-plot" class="d-none"></div>
-        </div>
-        <!-- Step Response Section -->
-        <h5>Step Response (Closed-Loop)</h5>
-        <div id="step-response-section" class="mb-4">
-          <div id="step-loading" class="spinner-container">
-            <div class="spinner-border text-primary" role="status">
-              <span class="sr-only">Loading Step Response...</span>
-            </div>
-          </div>
-          <div id="step-response" class="d-none"></div>
-        </div>
-        <!-- Performance Metrics Section -->
-        <h5>Performance Metrics</h5>
-        <div id="metrics" class="row">
-          <!-- Metrics boxes will be populated here -->
+<!-- Output Card: Displays analysis of the PID controller -->
+<div class="card">
+  <div class="card-header">
+    <h4 class="mb-0">System Analysis</h4>
+  </div>
+  <div class="card-body">
+    <!-- Error Alert: Displays any errors from the backend -->
+    <div id="error-message" class="alert alert-danger alert-custom d-none"></div>
+    
+    <!-- Bode Plot Section: Displays the loop shape L(s) computed as G(s)*C(s)
+         and then used to derive the bode plot data (magnitude and phase) -->
+    <h5>Bode Plot (Loop Shape)</h5>
+    <div id="bode-plot-section" class="text-center mb-4">
+      <div id="bode-loading" class="spinner-container">
+        <div class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading Bode Plot...</span>
         </div>
       </div>
+      <!-- Div for interactive Bode plot (rendered with Plotly) -->
+      <div id="bode-plot" class="d-none"></div>
     </div>
     
-    <!-- Footer with creator info and email icon -->
-    <footer>
-      <p>Made by Adeel Ahsan &nbsp; <a href="mailto:maahsan@mun.ca" title="Email Adeel Ahsan"><i class="fa-solid fa-envelope"></i></a></p>
-    </footer>
+    <!-- Step Response Section: Displays the closed-loop step response from 
+         T(s) = L(s)/(1+L(s)), visualized interactively -->
+    <h5>Step Response (Closed-Loop)</h5>
+    <div id="step-response-section" class="mb-4">
+      <div id="step-loading" class="spinner-container">
+        <div class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading Step Response...</span>
+        </div>
+      </div>
+      <div id="step-response" class="d-none"></div>
+    </div>
+    
+    <!-- Performance Metrics Section: Displays computed metrics such as rise time,
+         settling time, overshoot, gain/phase margins, and steady-state error -->
+    <h5>Performance Metrics</h5>
+    <div id="metrics" class="row">
+      <!-- Metrics boxes will be populated here -->
+    </div>
   </div>
+</div>
+
+<!-- Footer: Displays creator info and email link -->
+<footer>
+  <p>Made by Adeel Ahsan &nbsp; <a href="mailto:maahsan@mun.ca" title="Email Adeel Ahsan"><i class="fa-solid fa-envelope"></i></a></p>
+</footer>
+
   
   <!-- Include jQuery, Bootstrap JS, and Plotly JS -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
