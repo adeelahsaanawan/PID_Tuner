@@ -11,12 +11,9 @@ app = Flask(__name__)
 
 def sanitize(val):
     """Convert non-finite numbers (NaN/Infinity) to None."""
-    try:
-        if np.isscalar(val) and not np.isfinite(val):
-            return None
-        return val
-    except Exception:
-        return val
+    if np.isscalar(val) and not np.isfinite(val):
+        return None
+    return val
 
 @app.route("/")
 def index():
@@ -25,7 +22,7 @@ def index():
 @app.route("/analyze", methods=["POST"])
 def analyze():
     try:
-        # Get data from request JSON
+        # 1) Parse request data
         data = request.get_json()
         plant_num = [float(x) for x in data.get("plant_num", "").split(",")]
         plant_den = [float(x) for x in data.get("plant_den", "").split(",")]
@@ -34,74 +31,66 @@ def analyze():
         kd = float(data.get("kd", 0.1))
         N = float(data.get("N", 10))  # Derivative filter coefficient
 
-        # Build the plant G(s)
+        # 2) Build Plant: G(s)
         G = tf(plant_num, plant_den)
 
-        # Build the filtered PID controller:
-        # C(s) = Kp + Ki/s + (Kd * N * s)/(1 + N * s)
-        # Combined to a single rational function:
-        #   Numerator: [N*(Kp+Kd), (Kp+Ki*N), Ki]
-        #   Denom: [N, 1, 0]
-        C_num = [N * (kp + kd), (kp + ki * N), ki]
+        # 3) Build Filtered PID: C(s) = Kp + Ki/s + (Kd*N*s)/(1+N*s)
+        #    Combine into a single rational function => Numerator and Denominator
+        C_num = [N*(kp+kd), (kp + ki*N), ki]
         C_den = [N, 1, 0]
         C = tf(C_num, C_den)
 
-        # Open-loop transfer function L(s) = G(s)*C(s)
+        # 4) Open-Loop Transfer Function: L(s) = G(s)*C(s)
         L = G * C
 
-        # Closed-loop transfer function T(s) = L(s) / [1 + L(s)]
+        # 5) Closed-Loop Transfer Function: T(s)=L(s)/(1+L(s))
         T = feedback(L, 1)
 
-        # Compute gain and phase margins.
+        # 6) Compute margins and sanitize them
         gm, pm, wcg, wcp = margin(L)
-        gain_margin_dB = 20 * np.log10(gm) if gm > 0 else None
-
-        # Sanitize outputs to remove non-finite values
+        gain_margin_dB = 20*np.log10(gm) if gm > 0 else None
         gain_margin_dB = sanitize(gain_margin_dB)
-        pm = sanitize(pm)
+        pm  = sanitize(pm)
         wcg = sanitize(wcg)
         wcp = sanitize(wcp)
 
-        # Simulate step response (0 to 10 seconds)
+        # 7) Step Response of T(s), 0..10 sec
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
 
-        # Compute performance metrics using step_info (returns a dictionary)
+        # 8) Performance metrics (rise time, settling time, overshoot, etc.)
         info = step_info(T)
         ss_val = dcgain(T)
         steady_state_error = abs(1 - ss_val)
 
+        # 9) Prepare results (sanitized for JSON)
         result = {
-            "gain_margin_dB": gain_margin_dB,
+            "gain_margin_dB":  sanitize(gain_margin_dB),
             "phase_margin_deg": sanitize(pm),
-            "wcg": sanitize(wcg),
-            "wcp": sanitize(wcp),
-            "rise_time": sanitize(info["RiseTime"]),
-            "settling_time": sanitize(info["SettlingTime"]),
-            "overshoot": sanitize(info["Overshoot"]),
+            "wcg":              sanitize(wcg),
+            "wcp":              sanitize(wcp),
+            "rise_time":        sanitize(info["RiseTime"]),
+            "settling_time":    sanitize(info["SettlingTime"]),
+            "overshoot":        sanitize(info["Overshoot"]),
             "steady_state_error": sanitize(steady_state_error),
             "step_response": {
-                "time": t_out.tolist(),
+                "time":     t_out.tolist(),
                 "response": y_out.tolist()
             }
         }
 
-        # Generate interactive Bode plot data using frequency_response.
-        # Create logarithmically spaced frequency array.
-        omega = np.logspace(-2, 2, 100)
-        # Compute the frequency response (complex values)
-        resp = control.frequency_response(L, omega)
-        # Compute magnitude in dB.
-        mag_db = 20 * np.log10(np.abs(resp))
-        # Compute phase in radians and unwrap it.
-        phase_rad = np.angle(resp)
-        phase_rad_unwrapped = np.unwrap(phase_rad)
-        phase_deg = phase_rad_unwrapped * 180 / np.pi
+        # 10) Frequency Response for Bode Data (UNWRAPPED Phase, in dB)
+        omega = np.logspace(-2, 2, 100)               # freq range from 10^-2 to 10^2 rad/s
+        resp = control.frequency_response(L, omega)   # complex array
+        mag_db = 20 * np.log10(np.abs(resp))          # magnitude in dB
+        phase_rad = np.angle(resp)                    # raw phase in radians
+        phase_unwrapped = np.unwrap(phase_rad)        # remove discontinuities
+        phase_deg = (phase_unwrapped * 180.0 / np.pi) # convert to degrees
 
         bode_data = {
-            "omega": omega.tolist(),
-            "magnitude_db": mag_db.tolist(),
-            "phase_deg": phase_deg.tolist()
+            "omega":         omega.tolist(),
+            "magnitude_db":  mag_db.tolist(),
+            "phase_deg":     phase_deg.tolist()
         }
         result["bode_data"] = bode_data
 
