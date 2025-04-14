@@ -39,14 +39,14 @@ def analyze():
 
         # Build the filtered PID controller:
         # C(s) = Kp + Ki/s + (Kd * N * s)/(1+N * s)
-        # Combined as a single rational function:
-        # Numerator: [N*(Kp+Kd), (Kp+Ki*N), Ki]
-        # Denom: [N, 1, 0]
+        # Combined to a single rational function:
+        #   Numerator: [N*(Kp+Kd), (Kp + Ki*N), Ki]
+        #   Denom: [N, 1, 0]
         C_num = [N * (kp + kd), (kp + ki * N), ki]
         C_den = [N, 1, 0]
         C = tf(C_num, C_den)
 
-        # Open-loop transfer function L(s) = G(s) * C(s)
+        # Open-loop transfer function L(s) = G(s)*C(s)
         L = G * C
 
         # Closed-loop transfer function T(s) = L(s) / [1 + L(s)]
@@ -56,7 +56,7 @@ def analyze():
         gm, pm, wcg, wcp = margin(L)
         gain_margin_dB = 20 * np.log10(gm) if gm > 0 else None
 
-        # Sanitize outputs to remove NaN/Infinity
+        # Sanitize outputs to remove non-finite values
         gain_margin_dB = sanitize(gain_margin_dB)
         pm = sanitize(pm)
         wcg = sanitize(wcg)
@@ -66,7 +66,7 @@ def analyze():
         t = np.linspace(0, 10, 1000)
         t_out, y_out = step_response(T, T=t)
 
-        # Compute performance metrics using step_info (dictionary)
+        # Compute performance metrics using step_info (returns a dictionary)
         info = step_info(T)
         ss_val = dcgain(T)
         steady_state_error = abs(1 - ss_val)
@@ -86,13 +86,18 @@ def analyze():
             }
         }
 
-        # Generate interactive Bode data instead of an image.
-        # Use control.bode with plot=False to obtain arrays.
-        mag, phase, omega = control.bode(L, dB=True, plot=False)
+        # Generate interactive Bode data using frequency_response
+        # Create a logarithmically spaced frequency array
+        omega = np.logspace(-2, 2, 100)
+        # frequency_response returns a complex response array
+        resp = control.frequency_response(L, omega)
+        # Compute magnitude in dB and phase in degrees
+        mag_db = 20 * np.log10(np.abs(resp))
+        phase_deg = np.angle(resp, deg=True)
         bode_data = {
             "omega": omega.tolist(),
-            "magnitude_db": (20 * np.log10(mag)).tolist(),
-            "phase_deg": (phase * 180/np.pi).tolist()
+            "magnitude_db": mag_db.tolist(),
+            "phase_deg": phase_deg.tolist()
         }
         result["bode_data"] = bode_data
 
