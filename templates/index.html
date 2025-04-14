@@ -384,17 +384,20 @@ A higher \(K_i\) can slow the response."></i>
             document.getElementById("step-response").classList.remove("d-none");
           });
         
-          // Display performance metrics.
-          const metricsData = [
-            { label: "Gain Margin (dB)", value: result.gain_margin_dB !== null ? result.gain_margin_dB.toFixed(2) : "N/A" },
-            { label: "Phase Margin (°)", value: result.phase_margin_deg !== null ? result.phase_margin_deg.toFixed(2) : "N/A" },
-            { label: "Rise Time (s)", value: result.rise_time !== null ? result.rise_time.toFixed(3) : "N/A" },
-            { label: "Settling Time (s)", value: result.settling_time !== null ? result.settling_time.toFixed(3) : "N/A" },
-            { label: "Overshoot (%)", value: result.overshoot !== null ? result.overshoot.toFixed(2) + "%" : "N/A" },
-            { label: "Steady-State Error", value: result.steady_state_error !== null ? result.steady_state_error.toExponential(2) : "N/A" }
-          ];
+        // Display performance metrics.
+        const metricsData = [
+          { label: "Gain Margin (dB)", value: result.gain_margin_dB !== null ? result.gain_margin_dB.toFixed(2) : "N/A" },
+          { label: "Phase Margin (°)", value: result.phase_margin_deg !== null ? result.phase_margin_deg.toFixed(2) : "N/A" },
+          { label: "Rise Time (s)", value: result.rise_time !== null ? result.rise_time.toFixed(2) : "N/A" },
+          { label: "Settling Time (s)", value: result.settling_time !== null ? result.settling_time.toFixed(2) : "N/A" },
+          { label: "Overshoot (%)", value: result.overshoot !== null ? result.overshoot.toFixed(2) + "%" : "N/A" },
+          { label: "Steady-State Error", 
+            value: result.steady_state_error !== null 
+              ? (result.steady_state_error === 0 ? "0.00" : result.steady_state_error.toFixed(2)) 
+              : "N/A" 
+          }
+        ];
 
-        
         let metricsHtml = "";
         metricsData.forEach(metric => {
           metricsHtml += `
@@ -407,6 +410,7 @@ A higher \(K_i\) can slow the response."></i>
           `;
         });
         document.getElementById("metrics").innerHTML = metricsHtml;
+
       } catch (err) {
         document.getElementById("bode-loading").classList.add("d-none");
         document.getElementById("step-loading").classList.add("d-none");
